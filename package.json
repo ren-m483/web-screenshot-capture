@@ -1,0 +1,23 @@
+{
+  "name": "web-screenshot-capture",
+  "version": "1.0.0",
+  "description": "Capture multiple web pages across mobile, tablet, and desktop viewport sizes with Playwright.",
+  "type": "module",
+  "scripts": {
+    "capture": "node scripts/capture.js",
+    "capture:debug": "cross-env HEADLESS=false node scripts/capture.js"
+  },
+  "keywords": [
+    "playwright",
+    "screenshot",
+    "responsive",
+    "web-design",
+    "visual-testing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "playwright": "^1.0.0"
+  }
+}
