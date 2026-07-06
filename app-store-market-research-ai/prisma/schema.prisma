@@ -1,0 +1,207 @@
+// App Store Market Research AI - データベーススキーマ
+// 詳細設計書 8章に対応。MVPで使う項目に絞って実装している。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Storefront {
+  id          String   @id // "jp", "us" など Apple storefront code
+  name        String
+  defaultLang String
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Genre {
+  id        String   @id // Apple genre ID
+  name      String
+  parentId  String?
+  type      String   @default("app") // app | game
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model App {
+  id                        String    @id // App Store trackId (string化)
+  bundleId                  String?
+  name                      String
+  developerName             String?
+  sellerName                String?
+  primaryGenreId            String?
+  primaryGenreName          String?
+  genreIds                  String? // JSON文字列
+  genres                    String? // JSON文字列
+  price                     Float?
+  formattedPrice            String?
+  currency                  String?
+  averageUserRating         Float?
+  userRatingCount           Int?
+  version                   String?
+  releaseDate               DateTime?
+  currentVersionReleaseDate DateTime?
+  description               String?
+  screenshotUrls            String? // JSON文字列
+  ipadScreenshotUrls        String? // JSON文字列
+  artworkUrl100             String?
+  trackViewUrl              String?
+  contentAdvisoryRating     String?
+  rawLookupJson             String? // JSON文字列
+  lastLookupAt              DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  rankingEntries RankingEntry[]
+  metrics        AppMetric[]
+  reviews        Review[]
+}
+
+model RankingSnapshot {
+  id            String   @id @default(uuid())
+  storefrontId  String
+  genreId       String?
+  chartType     String // free | paid | grossing
+  limit         Int
+  source        String   @default("apple_rss")
+  sourceUrlHash String
+  fetchedAt     DateTime
+  createdAt     DateTime @default(now())
+
+  entries RankingEntry[]
+
+  @@index([storefrontId, genreId, chartType, limit])
+}
+
+model RankingEntry {
+  id                   String   @id @default(uuid())
+  snapshotId           String
+  appId                String
+  rank                 Int
+  appNameAtFetch       String
+  developerNameAtFetch String?
+  rawEntryJson         String?
+  createdAt            DateTime @default(now())
+
+  snapshot RankingSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  app      App             @relation(fields: [appId], references: [id])
+
+  @@index([snapshotId])
+  @@index([appId])
+}
+
+model AppMetric {
+  id                String   @id @default(uuid())
+  appId             String
+  storefrontId      String
+  averageUserRating Float?
+  userRatingCount   Int?
+  price             Float?
+  formattedPrice    String?
+  version           String?
+  capturedAt        DateTime @default(now())
+
+  app App @relation(fields: [appId], references: [id])
+
+  @@index([appId])
+}
+
+model Review {
+  id              String    @id @default(uuid())
+  appId           String
+  sourceType      String // own_app_official | public_limited | external_provider | csv
+  territory       String?
+  lang            String?
+  rating          Int?
+  title           String?
+  body            String
+  author          String?
+  reviewCreatedAt DateTime?
+  sentiment       String? // positive | neutral | negative
+  categories      String? // JSON文字列（配列）
+  rawJson         String?
+  fetchedAt       DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+
+  app App @relation(fields: [appId], references: [id])
+
+  @@index([appId])
+}
+
+model Analysis {
+  id             String   @id @default(uuid())
+  analysisType   String // genre_market | app_diagnosis | review | idea
+  targetType     String // app | genre | ranking_snapshot
+  targetId       String
+  inputHash      String
+  promptVersion  String
+  modelName      String
+  scoreJson      String?
+  resultJson     String
+  resultMarkdown String
+  createdAt      DateTime @default(now())
+
+  ideas   AppIdea[]
+  reports Report[]
+
+  @@index([analysisType, targetId])
+}
+
+model AppIdea {
+  id                String   @id @default(uuid())
+  analysisId        String
+  title             String
+  targetUser        String
+  problem           String
+  solution          String
+  mvpFeatures       String // JSON文字列（配列）
+  monetization      String
+  difficulty        String // low | medium | high
+  personalDevScore  Int
+  aiDevScore        Int
+  recommendation    String // recommend | niche | avoid
+  devPrompt         String
+  createdAt         DateTime @default(now())
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+}
+
+model Report {
+  id         String   @id @default(uuid())
+  analysisId String
+  title      String
+  reportType String // markdown | json | csv
+  content    String
+  createdAt  DateTime @default(now())
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  encrypted Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model ApiUsageLog {
+  id           String   @id @default(uuid())
+  provider     String // apple_rss | lookup | openai | claude | gemini
+  endpoint     String
+  status       Int?
+  durationMs   Int?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([provider, createdAt])
+}
