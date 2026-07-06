@@ -31,6 +31,7 @@ npm install
 cp .env.example .env
 npm run db:migrate
 npm run db:seed
+npm run db:seed:demo   # 任意: 外部ネットワークなしで試せる架空のデモデータを投入
 npm run dev
 ```
 

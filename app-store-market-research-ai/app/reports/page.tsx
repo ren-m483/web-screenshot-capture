@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Spinner } from "@/components/common/spinner";
+import { EmptyState } from "@/components/common/empty-state";
 
 interface ReportListItem {
   id: string;
@@ -31,36 +33,40 @@ export default function ReportsPage() {
         <p className="text-sm opacity-70">過去に生成した分析レポートを再表示できます。</p>
       </div>
 
-      {loading && <p className="text-sm opacity-60">読み込み中...</p>}
+      {loading && <Spinner />}
 
-      <div className="rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-black/5 dark:bg-white/5">
-            <tr>
-              <th className="text-left p-2">タイトル</th>
-              <th className="text-left p-2">種別</th>
-              <th className="text-left p-2">analysisId</th>
-              <th className="text-left p-2">作成日時</th>
-              <th className="text-left p-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.map((r) => (
-              <tr key={r.id} className="border-t border-black/5 dark:border-white/5">
-                <td className="p-2">{r.title}</td>
-                <td className="p-2">{r.analysisType}</td>
-                <td className="p-2 font-mono text-xs">{r.analysisId}</td>
-                <td className="p-2">{new Date(r.createdAt).toLocaleString("ja-JP")}</td>
-                <td className="p-2">
-                  <Link href={`/reports/${r.id}`} className="underline text-xs">
-                    表示
-                  </Link>
-                </td>
+      {!loading && reports.length === 0 ? (
+        <EmptyState message="まだレポートがありません。ジャンル分析やアプリ診断を実行するとここに表示されます。" />
+      ) : (
+        <div className="rounded-xl border border-black/10 dark:border-white/10 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-black/5 dark:bg-white/5">
+              <tr>
+                <th className="text-left p-2">タイトル</th>
+                <th className="text-left p-2">種別</th>
+                <th className="text-left p-2">analysisId</th>
+                <th className="text-left p-2">作成日時</th>
+                <th className="text-left p-2"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {reports.map((r) => (
+                <tr key={r.id} className="border-t border-black/5 dark:border-white/5">
+                  <td className="p-2">{r.title}</td>
+                  <td className="p-2">{r.analysisType}</td>
+                  <td className="p-2 font-mono text-xs">{r.analysisId}</td>
+                  <td className="p-2">{new Date(r.createdAt).toLocaleString("ja-JP")}</td>
+                  <td className="p-2">
+                    <Link href={`/reports/${r.id}`} className="underline text-xs">
+                      表示
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

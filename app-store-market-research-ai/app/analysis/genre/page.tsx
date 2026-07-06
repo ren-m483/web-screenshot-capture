@@ -7,6 +7,8 @@ import { APPLE_GENRES } from "@/constants/apple-genres";
 import { RANKING_LIMITS, type RankingLimit } from "@/constants/chart-types";
 import { MarkdownViewer } from "@/components/common/markdown-viewer";
 import { ScoreBar } from "@/components/common/score-bar";
+import { ErrorBanner } from "@/components/common/error-banner";
+import { NoticeBanner } from "@/components/common/notice-banner";
 import type { GenreAnalysisResult } from "@/types/analysis";
 
 function GenreAnalysisForm() {
@@ -95,11 +97,9 @@ function GenreAnalysisForm() {
         </button>
       </div>
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <ErrorBanner message={error} />}
       {!usedLlm && result && (
-        <p className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded px-3 py-2">
-          AI APIキーが未設定のため、ルールベースの簡易分析を表示しています。設定画面からAPIキーを登録するとより詳細な分析が生成されます。
-        </p>
+        <NoticeBanner message="AI APIキーが未設定のため、ルールベースの簡易分析を表示しています。設定画面からAPIキーを登録するとより詳細な分析が生成されます。" />
       )}
 
       {result && (

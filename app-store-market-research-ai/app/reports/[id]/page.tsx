@@ -2,6 +2,8 @@
 
 import { use, useEffect, useState } from "react";
 import { MarkdownViewer } from "@/components/common/markdown-viewer";
+import { ErrorBanner } from "@/components/common/error-banner";
+import { Spinner } from "@/components/common/spinner";
 
 interface ReportDetail {
   id: string;
@@ -28,8 +30,8 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       });
   }, [id]);
 
-  if (notFound) return <p className="text-sm text-rose-600">レポートが見つかりませんでした。</p>;
-  if (!report) return <p className="text-sm opacity-60">読み込み中...</p>;
+  if (notFound) return <ErrorBanner message="レポートが見つかりませんでした。" />;
+  if (!report) return <Spinner />;
 
   return (
     <div className="flex flex-col gap-4">

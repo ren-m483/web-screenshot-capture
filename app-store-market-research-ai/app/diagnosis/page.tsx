@@ -6,6 +6,8 @@ import { STOREFRONTS } from "@/constants/storefronts";
 import { RANKING_LIMITS, type RankingLimit } from "@/constants/chart-types";
 import { MarkdownViewer } from "@/components/common/markdown-viewer";
 import { ScoreBar } from "@/components/common/score-bar";
+import { ErrorBanner } from "@/components/common/error-banner";
+import { NoticeBanner } from "@/components/common/notice-banner";
 import type { AppDiagnosisResult } from "@/types/analysis";
 
 function DiagnosisForm() {
@@ -104,11 +106,9 @@ function DiagnosisForm() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <ErrorBanner message={error} />}
       {!usedLlm && result && (
-        <p className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded px-3 py-2">
-          AI APIキーが未設定のため、ルールベースの簡易分析を表示しています。
-        </p>
+        <NoticeBanner message="AI APIキーが未設定のため、ルールベースの簡易分析を表示しています。" />
       )}
 
       {result && (

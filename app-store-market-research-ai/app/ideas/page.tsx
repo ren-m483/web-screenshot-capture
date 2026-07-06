@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MarkdownViewer } from "@/components/common/markdown-viewer";
+import { ErrorBanner } from "@/components/common/error-banner";
 
 interface IdeaItem {
   id: string;
@@ -65,7 +66,7 @@ export default function IdeasPage() {
         </button>
       </div>
 
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <ErrorBanner message={error} />}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {ideas.map((idea, i) => (

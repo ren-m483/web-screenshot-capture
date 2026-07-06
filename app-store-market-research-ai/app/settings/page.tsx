@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { STOREFRONTS } from "@/constants/storefronts";
+import { NoticeBanner } from "@/components/common/notice-banner";
 
 interface SettingsData {
   openaiApiKeyConfigured: boolean;
@@ -61,9 +62,7 @@ export default function SettingsPage() {
       </div>
 
       {data && !anyConfigured && (
-        <p className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded px-3 py-2">
-          現在AI APIキーが未設定です。ジャンル分析・アプリ診断・レビュー分析はルールベースの簡易分析結果を表示します。
-        </p>
+        <NoticeBanner message="現在AI APIキーが未設定です。ジャンル分析・アプリ診断・レビュー分析はルールベースの簡易分析結果を表示します。" />
       )}
 
       <div className="flex flex-col gap-3 rounded-lg border border-black/10 dark:border-white/10 p-4">
