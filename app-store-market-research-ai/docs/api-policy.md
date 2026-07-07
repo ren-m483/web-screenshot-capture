@@ -5,7 +5,7 @@
 | 用途 | データソース | 備考 |
 | --- | --- | --- |
 | ランキング | Apple公式RSS（`itunes.apple.com/{cc}/rss/...`） | HTMLスクレイピングは行わない |
-| アプリ詳細 | iTunes Search / Lookup API（`itunes.apple.com/lookup`） | 約20コール/分の制限を考慮しキューで直列化 |
+| アプリ詳細 | iTunes Search / Lookup API（`itunes.apple.com/lookup`） | 約20コール/分の制限を考慮しキューで直列化。複数アプリは`id=1,2,3`形式でバッチ取得し、リクエスト回数自体を削減（Top50が未キャッシュでも1リクエストで済む） |
 | 公開レビュー（取得可能な範囲） | Apple公開カスタマーレビューフィード（`itunes.apple.com/{cc}/rss/customerreviews/...`） | 大量取得・網羅的取得は保証しない |
 | レビュー（任意） | ユーザーがアップロードするCSV | ファイルサイズ上限あり（5MB） |
 

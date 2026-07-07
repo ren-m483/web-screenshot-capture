@@ -6,6 +6,10 @@ import type { NormalizedApp } from "@/types/app";
 
 const APP_STORE_URL_ID_PATTERN = /\/id(\d+)/i;
 
+// iTunes Lookup APIはid=1,2,3のようにカンマ区切りで複数件を1リクエストにまとめられる。
+// RANKING_LIMITSの最大値（Top50）が1バッチで収まるようにしている。
+const LOOKUP_BATCH_SIZE = 50;
+
 interface ItunesLookupResult {
   trackId: number | string;
   bundleId?: string;
@@ -38,6 +42,8 @@ interface ItunesLookupResult {
  * iTunes Search API / Lookup API を使ってアプリ詳細を取得するサービス。
  * App Store画面のスクレイピングは行わない（要件 2.2）。
  * Search APIは約20コール/分の制限があるためキューで直列化する（要件 2.1 / 5.2）。
+ * 複数アプリをまとめて取得する場合は id=1,2,3 形式のバッチリクエストで
+ * リクエスト回数自体を減らし、レート制限による待ち時間を最小化する。
  */
 export class ItunesLookupService {
   extractAppIdFromUrl(url: string): string {
@@ -79,8 +85,21 @@ export class ItunesLookupService {
   }
 
   private async callLookupApi(appId: string, storefront: string, lang?: string): Promise<ItunesLookupResult | null> {
+    const results = await this.callLookupApiBatch([appId], storefront, lang);
+    return results[0] ?? null;
+  }
+
+  /**
+   * iTunes Lookup API は id パラメータにカンマ区切りで複数のtrackIdを渡すと
+   * 1回のリクエストでまとめて返してくれる。個別に呼ぶとレート制限（約20コール/分）で
+   * Top50の初回取得が最大150秒近くかかってしまうため、まとめて取得することで
+   * リクエスト数そのものを減らす。
+   */
+  private async callLookupApiBatch(appIds: string[], storefront: string, lang?: string): Promise<ItunesLookupResult[]> {
+    if (appIds.length === 0) return [];
+
     const searchParams = new URLSearchParams({
-      id: appId,
+      id: appIds.join(","),
       country: storefront,
       entity: "software",
     });
@@ -101,8 +120,7 @@ export class ItunesLookupService {
         return res.json();
       });
 
-      const results = (result as { results?: ItunesLookupResult[] })?.results ?? [];
-      return results[0] ?? null;
+      return (result as { results?: ItunesLookupResult[] })?.results ?? [];
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : String(error);
       throw error;
@@ -131,16 +149,44 @@ export class ItunesLookupService {
     return normalized;
   }
 
+  /**
+   * 複数アプリの詳細をまとめて取得する。
+   * キャッシュ済み（24時間以内にlookup済み）のアプリはネットワークアクセスをスキップし、
+   * 未取得のアプリのみ id=1,2,3 形式でバッチリクエストする（要件 2.1 / 5.1 / 5.2）。
+   * Top50を初回取得する場合でも、レート制限に触れるリクエスト回数を最小限に抑えられる。
+   */
   async lookupApps(appIds: string[], storefront: string, options?: { forceRefresh?: boolean; lang?: string }): Promise<NormalizedApp[]> {
     const uniqueIds = Array.from(new Set(appIds));
     const results: NormalizedApp[] = [];
-    for (const id of uniqueIds) {
+    const idsToFetch: string[] = [];
+
+    if (!options?.forceRefresh) {
+      for (const id of uniqueIds) {
+        const cached = await prisma.app.findUnique({ where: { id } });
+        if (cached?.lastLookupAt && isFresh(cached.lastLookupAt, env.lookupCacheMinutes) && cached.rawLookupJson) {
+          results.push(this.normalizeLookupResponse(JSON.parse(cached.rawLookupJson)));
+        } else {
+          idsToFetch.push(id);
+        }
+      }
+    } else {
+      idsToFetch.push(...uniqueIds);
+    }
+
+    for (let i = 0; i < idsToFetch.length; i += LOOKUP_BATCH_SIZE) {
+      const batch = idsToFetch.slice(i, i + LOOKUP_BATCH_SIZE);
       try {
-        results.push(await this.lookupApp(id, storefront, options));
+        const batchResults = await this.callLookupApiBatch(batch, storefront, options?.lang);
+        for (const raw of batchResults) {
+          const normalized = this.normalizeLookupResponse(raw);
+          await this.persist(normalized);
+          results.push(normalized);
+        }
       } catch {
-        // 個別アプリの取得失敗はスキップし、他のアプリの取得を継続する
+        // バッチ全体が失敗した場合はスキップし、他のバッチの取得を継続する
       }
     }
+
     return results;
   }
 

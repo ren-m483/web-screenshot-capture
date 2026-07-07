@@ -67,3 +67,38 @@ describe("ItunesLookupService.lookupApp (with mocked network)", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("ItunesLookupService.lookupApps (batch lookup)", () => {
+  const service = new ItunesLookupService();
+  const BATCH_APP_IDS = ["3000000001", "3000000002", "3000000003"];
+  const BATCH_PAYLOAD = {
+    resultCount: 3,
+    results: BATCH_APP_IDS.map((id, i) => ({
+      trackId: Number(id),
+      trackName: `Batch App ${i + 1}`,
+      artistName: "Batch Inc.",
+      price: 0,
+      formattedPrice: "無料",
+    })),
+  };
+
+  afterEach(async () => {
+    vi.unstubAllGlobals();
+    await prisma.appMetric.deleteMany({ where: { appId: { in: BATCH_APP_IDS } } });
+    await prisma.app.deleteMany({ where: { id: { in: BATCH_APP_IDS } } });
+  });
+
+  it("fetches multiple uncached apps in a single request instead of one call per app", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(BATCH_PAYLOAD), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const apps = await service.lookupApps(BATCH_APP_IDS, "jp");
+
+    expect(apps.map((a) => a.name).sort()).toEqual(["Batch App 1", "Batch App 2", "Batch App 3"]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const requestedUrl = String(fetchMock.mock.calls[0][0]);
+    for (const id of BATCH_APP_IDS) {
+      expect(requestedUrl).toContain(id);
+    }
+  });
+});
