@@ -115,6 +115,96 @@ screenshots/
 npm run capture:debug
 ```
 
+---
+
+# X（旧Twitter）バズ投稿ジェネレーター
+
+バズった投稿を分析して共通する特徴を抽出し、その型をなぞって
+新しい投稿案を自動生成するツールです。スクリーンショット機能とは
+独立して動き、外部APIやログインは不要です。
+
+## できること
+
+- バズ投稿サンプルの特徴を機械的に抽出（`npm run analyze`）
+  - 文字数・行数・箇条書きの有無
+  - 冒頭フックの型（問いかけ／数字提示／告白・体験など）
+  - 絵文字・ハッシュタグ・CTA（保存・フォロー等）の傾向
+  - 反応数（いいね・リポスト）で重み付けし、伸びた投稿ほど強く反映
+- 抽出した「スタイルプロファイル」とお題から、投稿案を複数生成
+  （`npm run generate`）
+
+## 注意
+
+分析対象は、自分が権利を持つ投稿か、分析目的で許諾を得た投稿に
+してください。同梱の`config/viral-samples.js`は、実在の投稿では
+なく典型的なパターンを表す合成サンプルです。
+
+生成された文章は下書きです。事実確認と最終的な調整をしたうえで
+投稿してください。
+
+## 使い方
+
+### 1. 分析対象を用意する
+
+`config/viral-samples.js`を編集し、分析したい投稿を並べます。
+`metrics`にいいね数・リポスト数を入れると、反応の大きい投稿ほど
+特徴へ強く反映されます。
+
+```javascript
+export const viralSamples = [
+  {
+    id: "sample-001",
+    theme: "副業",
+    text: "ここに投稿本文",
+    metrics: { likes: 12800, reposts: 3200, replies: 210 },
+  },
+];
+```
+
+### 2. 分析する
+
+```bash
+npm run analyze
+```
+
+特徴レポートが表示され、`data/profile.json`に保存されます。
+
+### 3. 投稿案を生成する
+
+お題や要点は`config/post-options.js`で指定するか、コマンドライン
+引数で上書きできます。
+
+```bash
+# 設定ファイルの内容で生成
+npm run generate
+
+# お題と件数を指定
+npm run generate -- --topic "朝活" --count 4
+
+# 要点も指定（カンマ区切り）
+npm run generate -- --topic "読書" --points "1日10分,寝る前に読む,感想を残す"
+```
+
+生成結果は画面に表示され、`data/generated-posts.json`にも保存されます。
+
+## 出力例
+
+```text
+data/
+├── profile.json           分析で得たスタイルプロファイル
+└── generated-posts.json   生成した投稿案
+```
+
+## 仕組み
+
+| ファイル | 役割 |
+| --- | --- |
+| `lib/analyzer.js` | 1投稿から特徴量を抽出 |
+| `lib/profile.js` | 複数投稿を重み付き集計してプロファイル化 |
+| `lib/generator.js` | プロファイルとお題から投稿案を組み立て |
+| `scripts/analyze.js` | 分析の実行入口 |
+| `scripts/generate.js` | 生成の実行入口 |
+
 ## GitHub Actions
 
 `.github/workflows/capture.yml`を含んでいます。

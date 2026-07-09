@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "capture": "node scripts/capture.js",
-    "capture:debug": "cross-env HEADLESS=false node scripts/capture.js"
+    "capture:debug": "cross-env HEADLESS=false node scripts/capture.js",
+    "analyze": "node scripts/analyze.js",
+    "generate": "node scripts/generate.js"
   },
   "keywords": [
     "playwright",

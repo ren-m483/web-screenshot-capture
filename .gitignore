@@ -1,0 +1,7 @@
+node_modules/
+
+# 撮影・生成の出力（.gitkeepは残す）
+screenshots/*
+!screenshots/.gitkeep
+data/*
+!data/.gitkeep
